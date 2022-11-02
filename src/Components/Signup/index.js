@@ -1,15 +1,71 @@
 import React from "react";
-import {  signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import sideImage from "./images/sideImage.png";
 import Authentication from "./images/authentication.png";
 import "./index.css";
 import { useNavigate } from "react-router-dom";
 import { ReactComponent as Google } from "./Google.svg";
-import {auth} from "../../config/firebaseInitisize";
+import { auth } from "../../config/firebaseInitisize";
+import { getDoc, doc } from "firebase/firestore";
+import { db } from "../../config/firebaseInitisize";
 function Signup({ type }) {
   let navigate = useNavigate();
   const provider = new GoogleAuthProvider();
   console.log(type);
+  async function getProfile({ userId, token, user, type }) {
+    try {
+      const docRef = doc(db, "usersData", userId);
+      const docData = await getDoc(docRef);
+      if (docData.exists()) {
+        console.log("Document data:", docData.data());
+        const constDocData = docData.data();
+        localStorage.setItem(
+          "user",
+          JSON.stringify({ ...user, userInfo: { ...constDocData } })
+        ); //store in Local storage
+
+        if (constDocData.step === 2) {
+          if (type === "client") {
+            if (constDocData.user_type === "candidate") {
+              alert("You are not allowed to login as client");
+              return;
+            } else {
+              setTimeout(() => {
+                navigate("/client/profile");
+              }, 2000);
+             
+            }
+          } else {
+            if (constDocData.user_type === "client") {
+              alert("You are not allowed to login as candidate");
+              return;
+            } else {
+            setTimeout(() => {
+              navigate("/candidate/profile");
+            }, 2000);
+            }
+          }
+        } else {
+          if (type === "client") {
+            navigate("/onboarding/client");
+          } else {
+            navigate("/onboarding/candidate");
+          }
+        }
+      } else {
+        if (type === "client") {
+          navigate("/onboarding/client");
+        } else {
+          navigate("/onboarding/candidate");
+        }
+        // doc.data() will be undefined in this case
+        console.log("No such document!");
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
   const signIn = () => {
     signInWithPopup(auth, provider)
       .then((result) => {
@@ -20,14 +76,10 @@ function Signup({ type }) {
         // The signed-in user info.
         const user = result.user;
         console.log(user, "token", token);
-        localStorage.setItem("user", JSON.stringify(user));  //store in Local storage
-        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user)); //store in Local storage
+        localStorage.setItem("token", token); //store in Local storage
+        const userInfo = getProfile({ userId: user.uid, token, user, type });
 
-        if (type === "client") {
-          navigate("/onboarding/client");
-        } else {
-          navigate("/onboarding/candidate");
-        }
         // ...
       })
       .catch((error) => {
