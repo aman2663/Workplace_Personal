@@ -200,13 +200,7 @@ function ClientProfile() {
                 id="outlined-basic"
                 variant="outlined"
               />
-            </Grid>
-            
-
-           
-            
-           
-           
+            </Grid> 
           </Grid>
         </div>
       </form>
